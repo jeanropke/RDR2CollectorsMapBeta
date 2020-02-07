@@ -9,12 +9,12 @@ var categories = [
   'american_flowers', 'antique_bottles', 'arrowhead', 'bird_eggs', 'coin', 'family_heirlooms', 'lost_bracelet',
   'lost_earrings', 'lost_necklaces', 'lost_ring', 'card_cups', 'card_pentacles', 'card_swords', 'card_wands', 'nazar',
   'fast_travel', 'treasure', 'random', 'treasure_hunter', 'tree_map', 'egg_encounter', 'dog_encounter', 'grave_robber',
-  'wounded_animal', 'fame_seeker', 'user_pins'
+  'wounded_animal', 'moonshiner_camp', 'rival_collector', 'user_pins'
 ];
 
 var categoriesDisabledByDefault = [
   'treasure', 'random', 'treasure_hunter', 'tree_map', 'egg_encounter', 'dog_encounter', 'grave_robber',
-  'wounded_animal', 'fame_seeker'
+  'wounded_animal', 'moonshiner_camp', 'rival_collector'
 ]
 
 var enabledCategories = categories;
@@ -28,16 +28,15 @@ var date;
 var wikiLanguage = [];
 
 var tempInventory = [];
+
 var debugMarkersArray = [];
 var tempCollectedMarkers = "";
 
 function init() {
-
   wikiLanguage['de-de'] = 'https://github.com/jeanropke/RDR2CollectorsMap/wiki/RDO-Sammler-Landkarte-Benutzerhandbuch-(Deutsch)';
   wikiLanguage['en-us'] = 'https://github.com/jeanropke/RDR2CollectorsMap/wiki/RDO-Collectors-Map-User-Guide-(English)';
   wikiLanguage['fr-fr'] = 'https://github.com/jeanropke/RDR2CollectorsMap/wiki/RDO-Collectors-Map-Guide-d\'Utilisateur-(French)';
   wikiLanguage['pt-br'] = 'https://github.com/jeanropke/RDR2CollectorsMap/wiki/Guia-do-Usu%C3%A1rio---Mapa-de-Colecionador-(Portuguese)';
-
 
   //sometimes, cookies are saved in the wrong order
   var cookiesList = [];
@@ -63,7 +62,6 @@ function init() {
   tempInventory = tempInventory.split(';');
 
   Inventory.load();
-
 
   if (typeof $.cookie('alert-closed-1') == 'undefined') {
     $('.map-alert').show();
@@ -105,6 +103,11 @@ function init() {
     $.cookie('enable-marker-popups', '1', { expires: 999 });
   }
 
+  if (typeof $.cookie('enable-marker-shadows') === 'undefined') {
+    Settings.isShadowsEnabled = true;
+    $.cookie('enable-marker-shadows', '1', { expires: 999 });
+  }
+
   if (typeof $.cookie('enable-dclick-zoom') === 'undefined') {
     Settings.isDoubleClickZoomEnabled = true;
     $.cookie('enable-dclick-zoom', '1', { expires: 999 });
@@ -125,6 +128,11 @@ function init() {
     $.cookie('overlay-opacity', '0.5', { expires: 999 });
   }
 
+  if (typeof $.cookie('clock-or-timer') === 'undefined') {
+    Settings.displayClockHideTimer = false;
+    $.cookie('clock-or-timer', 'false', { expires: 999 });
+  }
+
   MapBase.init();
   MapBase.setOverlays(Settings.overlayOpacity);
 
@@ -143,16 +151,28 @@ function init() {
   $('#reset-markers').prop("checked", Settings.resetMarkersDaily);
   $('#marker-cluster').prop("checked", Settings.markerCluster);
   $('#enable-marker-popups').prop("checked", Settings.isPopupsEnabled);
+  $('#enable-marker-shadows').prop("checked", Settings.isShadowsEnabled);
   $('#enable-dclick-zoom').prop("checked", Settings.isDoubleClickZoomEnabled);
   $('#pins-place-mode').prop("checked", Settings.isPinsPlacingEnabled);
   $('#pins-edit-mode').prop("checked", Settings.isPinsEditingEnabled);
   $('#show-help').prop("checked", Settings.showHelp);
   $('#show-coordinates').prop("checked", Settings.isCoordsEnabled);
+  $('#sort-items-alphabetically').prop("checked", Settings.sortItemsAlphabetically);
+  $("#enable-right-click").prop('checked', $.cookie('right-click') != null);
 
   if (Settings.showHelp) {
     $("#help-container").show();
   } else {
     $("#help-container").hide();
+  }
+
+  if (Settings.displayClockHideTimer) {
+    $('.clock-container').removeClass('turn-off');
+    $('.timer-container').addClass('turn-off');
+  }
+  else {
+    $('.clock-container').addClass('turn-off');
+    $('.timer-container').removeClass('turn-off');
   }
 
   Pins.addToMap();
@@ -168,17 +188,20 @@ function setMapBackground(mapIndex) {
     default:
     case 0:
       $('#map').css('background-color', '#d2b790');
+      MapBase.isDarkMode = false;
       break;
 
     case 1:
       $('#map').css('background-color', '#d2b790');
+      MapBase.isDarkMode = false;
       break;
 
     case 2:
       $('#map').css('background-color', '#3d3d3d');
+      MapBase.isDarkMode = true;
       break;
   }
-
+  MapBase.setOverlays();
   $.cookie('map-layer', mapIndex, { expires: 999 });
 }
 
@@ -239,12 +262,16 @@ setInterval(function () {
   correctTime.setHours(correctTime.getUTCHours());
   correctTime.setMinutes(correctTime.getUTCMinutes() - 3); //for some reason time in game is 3 sec. delayed to normal time
 
-  if (display_24)
+  if (display_24) {
     $('#time-in-game').text(addZeroToNumber(correctTime.getHours()) + ":" + addZeroToNumber(correctTime.getMinutes()));
+  } else {
+    $('#time-in-game').text(addZeroToNumber(correctTime.getHours() % 12) + ":" + addZeroToNumber(correctTime.getMinutes()) + " " + ((correctTime.getHours() < 12) ? "AM" : "PM"));
+  }
 
-  else {
-    $('#time-in-game').text(addZeroToNumber(correctTime.getHours() % 12) + ":" + addZeroToNumber(correctTime.getMinutes()));
-    $('#am-pm-time').text(((correctTime.getHours() < 12) ? "AM" : "PM"));
+  if (correctTime.getHours() >= 22 || correctTime.getHours() < 5) {
+    $('.day-cycle').css('background', 'url(assets/images/moon.png)');
+  } else {
+    $('.day-cycle').css('background', 'url(assets/images/sun.png)');
   }
 
   //Countdown for the next cycle
@@ -255,18 +282,18 @@ setInterval(function () {
   $('#countdown').text(addZeroToNumber(hours) + ':' + addZeroToNumber(minutes) + ':' + addZeroToNumber(seconds));
 
   if (correctTime.getHours() >= 22 || correctTime.getHours() < 5) {
-    $('#day-cycle').css('background', 'url(assets/images/moon.png)');
     $('[data-marker*="flower_agarita"], [data-marker*="flower_blood"]').css('filter', 'drop-shadow(0 0 .5rem #fff) drop-shadow(0 0 .25rem #fff)');
   }
   else {
-    $('#day-cycle').css('background', 'url(assets/images/sun.png)');
     $('[data-marker*="flower_agarita"], [data-marker*="flower_blood"]').css('filter', 'none');
   }
 }, 1000);
 
 // toggle timer and clock after click the container
 $('.timer-container, .clock-container').on('click', function () {
-  $('.timer-container, .clock-container').toggleClass("display-in-front");
+  $('.timer-container, .clock-container').toggleClass('turn-off');
+  Settings.displayClockHideTimer = !Settings.displayClockHideTimer;
+  $.cookie('clock-or-timer', Settings.displayClockHideTimer, { expires: 999 });
 });
 
 /**
@@ -284,6 +311,15 @@ $("#show-all-markers").on("change", function () {
   MapBase.addMarkers();
 });
 
+// Give me back my right-click
+$('#enable-right-click').on("change", function () {
+  if ($("#enable-right-click").prop('checked')) {
+    $.cookie('right-click', '1', { expires: 999 });
+  } else {
+    $.removeCookie('right-click');
+  }
+});
+
 //Disable menu category when click on input
 $('.menu-option.clickable input').on('click', function (e) {
   e.stopPropagation();
@@ -292,21 +328,18 @@ $('.menu-option.clickable input').on('click', function (e) {
 //change cycle by collection
 $('.menu-option.clickable input').on('change', function (e) {
   var el = $(e.target);
-  Cycles.data.cycles[Cycles.data.current][el.attr("name")] = parseInt(el.val());
+  Cycles.categories[el.attr("name")] = parseInt(el.val());
   MapBase.addMarkers();
   Menu.refreshMenu();
 });
 
 //Search system on menu
 $("#search").on("input", function () {
-  searchTerms = [];
-  $.each($('#search').val().split(';'), function (key, value) {
-    if ($.inArray(value.trim(), searchTerms) == -1) {
-      if (value.length > 0)
-        searchTerms.push(value.trim());
-    }
-  });
-  MapBase.onSearch();
+  MapBase.onSearch($('#search').val());
+});
+
+$("#copy-search-link").on("click", function () {
+  setClipboardText(`http://jeanropke.github.io/RDR2CollectorsMap/?search=${$('#search').val()}`)
 });
 
 //Change & save tool type
@@ -328,7 +361,11 @@ $("#clear-markers").on("click", function () {
       Inventory.items[value.text].isCollected = false;
 
     value.isCollected = false;
-    value.canCollect = value.amount < Inventory.stackSize;
+
+    if (Inventory.isEnabled)
+      value.canCollect = value.amount < Inventory.stackSize;
+    else
+      value.canCollect = true;
   });
 
   Inventory.save();
@@ -342,12 +379,16 @@ $("#clear-markers").on("click", function () {
 $("#clear-inventory").on("click", function () {
 
   $.each(MapBase.markers, function (key, marker) {
-    if (marker.day == Cycles.data.cycles[Cycles.data.current][marker.category] && (marker.amount > 0 || marker.isCollected)) {
+    if (marker.day == Cycles.categories[marker.category] && (marker.amount > 0 || marker.isCollected)) {
       if (Inventory.items[marker.text])
         Inventory.items[marker.text].amount = 0;
 
       marker.amount = 0;
-      marker.canCollect = marker.amount < Inventory.stackSize && !marker.isCollected;
+
+      if (Inventory.isEnabled)
+        marker.canCollect = marker.amount < Inventory.stackSize && !marker.isCollected;
+      else
+        marker.canCollect = !marker.isCollected;
     }
   });
 
@@ -460,7 +501,7 @@ $('.submenu-only').on('click', function (e) {
 //Sell collections on menu
 $('.collection-sell').on('click', function (e) {
   var collectionType = $(this).parent().parent().data('type');
-  var getMarkers = MapBase.markers.filter(_m => _m.category == collectionType && _m.day == Cycles.data.cycles[Cycles.data.current][_m.category]);
+  var getMarkers = MapBase.markers.filter(_m => _m.category == collectionType && _m.day == Cycles.categories[_m.category]);
 
   $.each(getMarkers, function (key, value) {
     if (value.subdata) {
@@ -476,7 +517,7 @@ $('.collection-sell').on('click', function (e) {
 // Reset collections on menu
 $('.collection-reset').on('click', function (e) {
   var collectionType = $(this).parent().parent().data('type');
-  var getMarkers = MapBase.markers.filter(_m => _m.category == collectionType && _m.day == Cycles.data.cycles[Cycles.data.current][_m.category]);
+  var getMarkers = MapBase.markers.filter(_m => _m.category == collectionType && _m.day == Cycles.categories[_m.category]);
 
   $.each(getMarkers, function (key, value) {
     if (value.canCollect)
@@ -504,7 +545,7 @@ $(document).on('click', '.collectible-wrapper[data-type]', function () {
   var collectible = $(this).data('type');
   var category = $(this).parent().data('type');
 
-  MapBase.removeItemFromMap(Cycles.data.cycles[Cycles.data.current][category], collectible, collectible, category, true);
+  MapBase.removeItemFromMap(Cycles.categories[category], collectible, collectible, category, true);
 });
 
 //Open & close side menu
@@ -539,6 +580,14 @@ $('#enable-marker-popups').on("change", function () {
   MapBase.addMarkers();
 });
 
+$('#enable-marker-shadows').on("change", function () {
+  Settings.isShadowsEnabled = $("#enable-marker-shadows").prop('checked');
+  $.cookie('enable-marker-shadows', Settings.isShadowsEnabled ? '1' : '0', { expires: 999 });
+
+  MapBase.map.removeLayer(Layers.itemMarkersLayer);
+  MapBase.addMarkers();
+});
+
 $('#enable-dclick-zoom').on("change", function () {
   Settings.isDoubleClickZoomEnabled = $("#enable-dclick-zoom").prop('checked');
   $.cookie('enable-dclick-zoom', Settings.isDoubleClickZoomEnabled ? '1' : '0', { expires: 999 });
@@ -548,6 +597,12 @@ $('#enable-dclick-zoom').on("change", function () {
   } else {
     MapBase.map.doubleClickZoom.disable();
   }
+});
+
+$('#sort-items-alphabetically').on("change", function () {
+  Settings.sortItemsAlphabetically = $("#sort-items-alphabetically").prop('checked');
+  $.cookie('sort-items-alphabetically', Settings.sortItemsAlphabetically ? '1' : '0', { expires: 999 });
+  Menu.refreshMenu();
 });
 
 /**
@@ -653,13 +708,21 @@ $('#inventory-stack').on("change", function () {
 $('#cookie-export').on("click", function () {
   try {
     var cookies = $.cookie();
+    var storage = localStorage;
 
-    // Google Analytics cookie isn't relevant.
-    delete cookies._ga;
+    // Remove irrelevant properties.
+    delete cookies['_ga'];
+    delete storage['randid'];
+    delete storage['pinned-items'];
 
-    var cookiesJson = JSON.stringify(cookies, null, 4);
+    var settings = {
+      'cookies': cookies,
+      'local': storage
+    };
 
-    downloadAsFile("collectible-map-settings.json", cookiesJson);
+    var settingsJson = JSON.stringify(settings, null, 4);
+
+    downloadAsFile("collectible-map-settings.json", settingsJson);
   } catch (error) {
     console.error(error);
     alert(Language.get('alerts.feature_not_supported'));
@@ -676,25 +739,37 @@ $('#cookie-import').on('click', function () {
     }
 
     file.text().then(function (res) {
-      var json = null;
+      var settings = null;
 
       try {
-        json = JSON.parse(res);
+        settings = JSON.parse(res);
       } catch (error) {
         alert(Language.get('alerts.file_not_valid'));
         return;
       }
 
-      // Remove all current cookies.
-      var currentCookies = $.cookie();
+      // Remove all current settings.
+      $.each($.cookie(), function (key, value) {
+        $.removeCookie(key);
+      })
 
-      Object.keys(currentCookies).forEach(cookie => {
-        $.removeCookie(cookie);
+      $.each(localStorage, function (key, value) {
+        localStorage.removeItem(key);
+      })
+
+      // Import all the settings from the file.
+      if (typeof settings.cookies === 'undefined' && typeof settings.local === 'undefined') {
+        $.each(settings, function (key, value) {
+          $.cookie(key, value, { expires: 999 });
+        });
+      }
+
+      $.each(settings.cookies, function (key, value) {
+        $.cookie(key, value, { expires: 999 });
       });
 
-      // Import all the cookies from the file.
-      Object.keys(json).forEach(key => {
-        $.cookie(key, json[key], { expires: 999 });
+      $.each(settings.local, function (key, value) {
+        localStorage.setItem(key, value);
       });
 
       // Do this for now, maybe look into refreshing the menu completely (from init) later.
@@ -812,11 +887,13 @@ $('#generate-route-use-pathfinder').on("change", function () {
   if (Routes.usePathfinder) {
     $('#generate-route-distance').parent().hide();
     $('#generate-route-auto-update').parent().parent().hide();
-    $('#generate-route-allow-fasttravel').parent().parent().show();
+    $('#generate-route-fasttravel-weight').parent().show();
+    $('#generate-route-railroad-weight').parent().show();
   } else {
     $('#generate-route-distance').parent().show();
     $('#generate-route-auto-update').parent().parent().show();
-    $('#generate-route-allow-fasttravel').parent().parent().hide();
+    $('#generate-route-fasttravel-weight').parent().hide();
+    $('#generate-route-railroad-weight').parent().hide();
   }
 
   // Prevent both routes being stuck on screen.
@@ -825,34 +902,28 @@ $('#generate-route-use-pathfinder').on("change", function () {
   Routes.generatePath();
 });
 
-$('#generate-route-allow-fasttravel').on("change", function () {
-  Routes.allowFasttravel = $("#generate-route-allow-fasttravel").prop('checked');
-  $.cookie('generator-path-allow-fasttravel', Routes.allowFasttravel ? '1' : '0', { expires: 999 });
+$('#generate-route-fasttravel-weight').on("change", function () {
+  Routes.fasttravelWeight = parseFloat($("#generate-route-fasttravel-weight").val());
+  $.cookie('generator-path-fasttravel-weight', Routes.fasttravelWeight.toString(), { expires: 999 });
+
+  Routes.generatePath();
+});
+
+$('#generate-route-railroad-weight').on("change", function () {
+  Routes.railroadWeight = parseFloat($("#generate-route-railroad-weight").val());
+  $.cookie('generator-path-railroad-weight', Routes.railroadWeight.toString(), { expires: 999 });
 
   Routes.generatePath();
 });
 
 /**
- * Loot table modal
- */
-$('#detailed-loot-modal').on('show.bs.modal', function (event) {
-  var button = $(event.relatedTarget);
-  var table = button.data('table');
-
-  var modal = $(this)
-  modal.find('.modal-title').text(Language.get('menu.loot_table.table_' + table));
-
-  if (table == 'unknown') table = null;
-  modal.find('.modal-body').html(Loot.generateTable(table));
-})
-
-/**
  * Tutorial logic
  */
 $('[data-help]').hover(function (e) {
-  $('#help-container p').text(Language.get(`help.${$(this).data('help')}`));
+  var attr = $(this).attr('data-help');
+  $('#help-container p').attr('data-text', `help.${attr}`).text(Language.get(`help.${attr}`));
 }, function () {
-  $('#help-container p').text(Language.get(`help.default`));
+  $('#help-container p').attr('data-text', `help.default`).text(Language.get(`help.default`));
 });
 
 $('#show-help').on("change", function () {
@@ -869,12 +940,11 @@ $('#show-help').on("change", function () {
 /**
  * Leaflet plugins
  */
-L.Icon.DataMarkup = L.Icon.extend({
+L.DivIcon.DataMarkup = L.DivIcon.extend({
   _setIconStyles: function (img, name) {
-    L.Icon.prototype._setIconStyles.call(this, img, name);
-    if (this.options.marker) {
+    L.DivIcon.prototype._setIconStyles.call(this, img, name);
+    if (this.options.marker)
       img.dataset.marker = this.options.marker;
-    }
   }
 });
 
@@ -888,17 +958,40 @@ L.LayerGroup.include({
   }
 });
 
+// Disable annoying menu on right mouse click
+$('*').on('contextmenu', function (event) {
+  if ($.cookie('right-click') != null)
+    return;
+  event.preventDefault();
+});
+
+// reset all settings & cookies
+$('#delete-all-settings').on('click', function () {
+  var cookies = $.cookie();
+  for (var cookie in cookies) {
+    $.removeCookie(cookie);
+  }
+
+  $.each(localStorage, function (key) {
+    localStorage.removeItem(key);
+  });
+
+  location.reload(true);
+});
+
 /**
  * Event listeners
  */
-window.addEventListener("DOMContentLoaded", init);
-window.addEventListener("DOMContentLoaded", Cycles.load());
-window.addEventListener("DOMContentLoaded", Inventory.init());
-window.addEventListener("DOMContentLoaded", MapBase.loadWeeklySet());
-window.addEventListener("DOMContentLoaded", MapBase.loadFastTravels());
-window.addEventListener("DOMContentLoaded", MadamNazar.loadMadamNazar());
-window.addEventListener("DOMContentLoaded", Treasures.load());
-window.addEventListener("DOMContentLoaded", Encounters.load());
-window.addEventListener("DOMContentLoaded", Loot.load());
-window.addEventListener("DOMContentLoaded", MapBase.loadMarkers());
-window.addEventListener("DOMContentLoaded", Routes.init());
+
+$(function () {
+  init();
+  Cycles.load();
+  Inventory.init();
+  MapBase.loadWeeklySet();
+  MapBase.loadFastTravels();
+  MadamNazar.loadMadamNazar();
+  Treasures.load();
+  Encounters.load();
+  MapBase.loadMarkers();
+  Routes.init();
+});

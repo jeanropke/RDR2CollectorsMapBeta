@@ -5,6 +5,7 @@
     font-weight: 400;
     text-rendering: optimizeLegibility
 }
+
 @font-face {
     font-family: RDRLino;
     src: url(../fonts/RDRLino-Regular.woff2) format("woff2"), url(../fonts/RDRLino-Regular.woff) format("woff"), url(../fonts/RDRLino-Regular.ttf) format("truetype");
@@ -12,6 +13,7 @@
     font-weight: 400;
     text-rendering: optimizeLegibility
 }
+
 *, *:before, *:after {
     box-sizing: border-box;
 }
@@ -59,14 +61,17 @@ p {
 input, textarea, select, .btn {
     outline: none;
 }
+
 .cycle-table {
     color: white;
     background: black;
 }
+
 .cycle-table td, .cycle-table th {
     padding: 2px;
     border: 1px solid black;
 }
+
 #main-header {
     display: flex;
     margin: 10px;
@@ -84,10 +89,12 @@ input, textarea, select, .btn {
     background-size: auto 75px;
     padding: 6px 0;
 }
-#main-header-center > span {
+
+#main-header-center>span {
     font-family: RDRLino, serif;
     font-weight: normal;
 }
+
 #main-header-left, #main-header-right {
     user-select: none;
     height: 75px;
@@ -204,9 +211,14 @@ input, textarea, select, .btn {
 
 #countdown, #item-counter, #time-in-game {
     font-size: 16px;
-    line-height: 1.7;
     user-select: none;
-    margin: auto auto auto 2px;
+    margin: 0;
+}
+
+.day-cycle {
+    width: 16px;
+    height: 16px;
+    margin: auto 0 auto 8px;
 }
 
 .timer-container, .clock-container {
@@ -217,29 +229,17 @@ input, textarea, select, .btn {
     color: #eee;
     left: 40px;
     top: 5px;
-    width: 95px;
+    min-width: 95px;
     height: 30px;
     transition: all 200ms ease-out;
-    padding-left: 8px;
+    padding: 0 8px;
     display: inline-flex;
     cursor: pointer;
+    line-height: 28px;
 }
 
-.display-in-front {
-    z-index: 1020;
-}
-
-#am-pm-time {
-    margin: auto 12px auto auto;
-    font-size: 16px;
-    line-height: 1.7;
-    user-select: none;
-}
-
-#day-cycle {
-    width: 16px;
-    height: 16px;
-    margin: auto 4px auto auto;
+.turn-off {
+    display: none;
 }
 
 .counter-container {
@@ -398,9 +398,9 @@ input, textarea, select, .btn {
 .input-day {
     background: #383838;
     border: none;
-    padding: 5px 10px;
+    padding: 4px 10px;
     color: #f0f0f0;
-    font-size: 14px;
+    font-size: 13px;
     height: 100%;
     border-radius: 3px;
     margin-left: 6px;
@@ -534,19 +534,25 @@ input, textarea, select, .btn {
 }
 
 .side-menu .menu-hidden .collectible-wrapper {
-    padding: 5px 12px;
+    padding: 6px 12px;
     cursor: pointer;
     user-select: none;
 }
 
 .side-menu .menu-hidden .collectible-icon {
     float: left;
-    height: 30px;
+    height: 28px;
     margin-right: 10px;
+}
+.side-menu .menu-hidden .collectible-icon.random-encounter {    
+    width: 32px;
+    height: auto;
+    margin-top: 1px;
+    margin-right: 6px;
+    margin-bottom: -3px;
 }
 
 .side-menu .menu-hidden .collectible-text {
-    padding: 5px 0;
     display: flex;
     justify-content: space-between;
     font-size: 15px;
@@ -556,6 +562,10 @@ input, textarea, select, .btn {
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
+}
+
+.side-menu .menu-hidden .collectible, .input-container label {
+    line-height: 24px;
 }
 
 .same-cycle-warning-menu {
@@ -614,8 +624,14 @@ a.wiki-page:visited {
     text-decoration: none;
 }
 
-.highlightItems {
+.highlight-items {
     filter: drop-shadow(0 0 .5rem #cc0000) drop-shadow(0 0 .4rem #cc0000);
+}
+
+.highlight-important-items-menu {
+    text-decoration: underline;
+    text-decoration-color: #cc0000;
+    text-decoration-thickness: 2px;
 }
 
 .help-popup {
@@ -687,6 +703,7 @@ a.wiki-page:visited {
     line-height: 12px;
     white-space: nowrap;
     margin-left: 6px;
+    padding: 3px 0;
 }
 
 .counter-number {
@@ -781,6 +798,16 @@ a.wiki-page:visited {
     background-image: url(../images/action_indicator_external.png) !important;
 }
 
+.input-action-copy {
+    width: 30px;
+    background-image: url(../images/action_indicator_copy.png);
+    background-size: auto 20px;
+    background-repeat: no-repeat;
+    background-position: center;
+    margin-left: 6px;
+    cursor: pointer;
+}
+
 a.no-style {
     color: #fff;
     text-decoration: none;
@@ -793,6 +820,24 @@ a.no-style:hover {
 a.no-style:visited {
     color: #fff;
     text-decoration: none;
+}
+
+.leaflet-control-attribution {
+    background: white;
+    color: #333;
+}
+
+.leaflet-dark-mode .leaflet-control-attribution {
+    background: #333;
+    color: white;
+}
+
+.leaflet-dark-mode .leaflet-control-attribution a {
+    color: white !important;
+}
+
+.text-danger {
+    color: #f95050 !important
 }
 
 /* Bootstrap modal styling */
@@ -902,31 +947,8 @@ a.no-style:visited {
     }
 }
 
-/* Loot table styling */
-
-.loot-table-table-title {
-    text-align: left;
-    margin: 0;
-}
-
-.loot-table-category-title, .loot-table-category-rate, .loot-table-subcategory-title, .loot-table-subcategory-rate {
-    font-size: 20px;
-}
-
-.loot-table-item-title, .loot-table-item-rate {
-    font-size: 16px;
-}
-
-.loot-table-category-header, .loot-table-subcategory-header, .loot-table-item {
-    display: flex;
-    justify-content: space-between;
-}
-
-.loot-table-categories .loot-table-category, .loot-table-category-items, .loot-table-subcategory-items {
-    padding: 0 20px;
-}
-
 /* Tutorial styling */
+
 #help-container {
     position: relative;
     position: -webkit-sticky;
@@ -941,43 +963,85 @@ a.no-style:visited {
 }
 
 /* Pathfinder styling */
+
 .pathfinder-control {
-	padding: 5px;
-	background: #fff
+    padding: 5px;
+    background: #fff
 }
 
 .pathfinder-btn {
-	display: inline-block;
-	padding: 0 10px;
-	height: 30px;
-	line-height: 30px;
-	background: transparent;
-	border: none;
-	cursor: pointer;
-	color: #000;
+    display: inline-block;
+    padding: 0 10px;
+    height: 30px;
+    line-height: 30px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: #000;
 }
+
 .pathfinder-btn:disabled {
-	color: #789;
+    color: #789;
 }
 
 .pathfinder-btn-before {
-	padding: 0;
-	width: 30px;
-	text-align: center;
-}
-.pathfinder-btn-after {
-	padding: 0;
-	width: 30px;
-	text-align: center;
+    padding: 0;
+    width: 30px;
+    text-align: center;
 }
 
-.pathfinder-btn > small {
-	font-size: 75%;
-	line-height: 0;
-	position: relative;
-	vertical-align: baseline;
-	top: -0.5em;
-	left: 0.1em;
-	font-family: 'Courier New', Courier, monospace;
-	text-transform: uppercase;
+.pathfinder-btn-after {
+    padding: 0;
+    width: 30px;
+    text-align: center;
+}
+
+.pathfinder-btn>small {
+    font-size: 75%;
+    line-height: 0;
+    position: relative;
+    vertical-align: baseline;
+    top: -0.5em;
+    left: 0.1em;
+    font-family: 'Courier New', Courier, monospace;
+    text-transform: uppercase;
+}
+
+/* Leaflet Marker styling */
+
+.leaflet-div-icon {
+    width: 36px;
+    height: 45px;
+    background-color: transparent;
+    border: none;
+}
+
+.leaflet-div-icon .overlay, .leaflet-div-icon .icon, .leaflet-div-icon .background, .leaflet-div-icon .shadow {
+    position: absolute;
+    text-align: center;
+}
+
+.leaflet-div-icon .overlay {
+    z-index: 4;
+    width: 100%;
+    height: auto;
+}
+
+.leaflet-div-icon .icon {
+    z-index: 3;
+    width: 100%;
+    height: auto;
+    padding-top: 6px;
+}
+
+.leaflet-div-icon .background {
+    z-index: 2;
+    width: 100%;
+    height: 100%;
+}
+
+.leaflet-div-icon .shadow {
+    z-index: 1;
+    bottom: -2px;
+    left: 9px;
 }

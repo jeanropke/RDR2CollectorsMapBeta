@@ -1,16 +1,29 @@
 var Cycles = {
     data: [],
+    categories: [],
     load: function () {
-        var date = new Date();
-        var dateString = (date.getUTCMonth() + 1) + '-' + date.getUTCDate() + '-' + date.getUTCFullYear();
-        $.getJSON(`data/cycles.json?nocache=${nocache}&date=${dateString}`)
+        $.getJSON('https://pepegapi.jeanropke.net/rdo/cycles')
             .done(function (_data) {
-                Cycles.data = _data;
+                Cycles.categories.date = _data.date;
+                Cycles.categories.american_flowers = _data.american_flowers;
+                Cycles.categories.card_cups = _data.tarot_cards;
+                Cycles.categories.card_pentacles = _data.tarot_cards;
+                Cycles.categories.card_swords = _data.tarot_cards;
+                Cycles.categories.card_wands = _data.tarot_cards;
+                Cycles.categories.lost_bracelet = _data.lost_jewelry;
+                Cycles.categories.lost_earrings = _data.lost_jewelry;
+                Cycles.categories.lost_necklaces = _data.lost_jewelry;
+                Cycles.categories.lost_ring = _data.lost_jewelry;
+                Cycles.categories.antique_bottles = _data.antique_bottles;
+                Cycles.categories.bird_eggs = _data.bird_eggs;
+                Cycles.categories.arrowhead = _data.arrowhead;
+                Cycles.categories.family_heirlooms = _data.family_heirlooms;
+                Cycles.categories.coin = _data.coin;
+                Cycles.categories.random = _data.random;
+                Cycles.categories.yesterday = _data.yesterday;
                 Cycles.setCustomCycles();
                 Cycles.setCycles();
-
                 Cycles.setLocaleDate();
-                Cycles.checkForUpdate();
             });
         console.info('%c[Cycles] Loaded!', 'color: #bada55; background: #242424');
     },
@@ -27,21 +40,21 @@ var Cycles = {
                     console.warn('Cycles parameters invalid');
                 }
                 else {
-                    Cycles.data.cycles[Cycles.data.current].american_flowers = _cycles[0];
-                    Cycles.data.cycles[Cycles.data.current].card_cups = _cycles[1];
-                    Cycles.data.cycles[Cycles.data.current].card_swords = _cycles[1];
-                    Cycles.data.cycles[Cycles.data.current].card_wands = _cycles[1];
-                    Cycles.data.cycles[Cycles.data.current].card_pentacles = _cycles[1];
-                    Cycles.data.cycles[Cycles.data.current].lost_bracelet = _cycles[2];
-                    Cycles.data.cycles[Cycles.data.current].lost_earrings = _cycles[2];
-                    Cycles.data.cycles[Cycles.data.current].lost_necklaces = _cycles[2];
-                    Cycles.data.cycles[Cycles.data.current].lost_ring = _cycles[2];
-                    Cycles.data.cycles[Cycles.data.current].antique_bottles = _cycles[3];
-                    Cycles.data.cycles[Cycles.data.current].bird_eggs = _cycles[4];
-                    Cycles.data.cycles[Cycles.data.current].arrowhead = _cycles[5];
-                    Cycles.data.cycles[Cycles.data.current].family_heirlooms = _cycles[6];
-                    Cycles.data.cycles[Cycles.data.current].coin = _cycles[7];
-                    Cycles.data.cycles[Cycles.data.current].random = _cycles[8];
+                    Cycles.categories.american_flowers = _cycles[0];
+                    Cycles.categories.card_cups = _cycles[1];
+                    Cycles.categories.card_pentacles = _cycles[1];
+                    Cycles.categories.card_swords = _cycles[1];
+                    Cycles.categories.card_wands = _cycles[1];
+                    Cycles.categories.lost_bracelet = _cycles[2];
+                    Cycles.categories.lost_earrings = _cycles[2];
+                    Cycles.categories.lost_necklaces = _cycles[2];
+                    Cycles.categories.lost_ring = _cycles[2];
+                    Cycles.categories.antique_bottles = _cycles[3];
+                    Cycles.categories.bird_eggs = _cycles[4];
+                    Cycles.categories.arrowhead = _cycles[5];
+                    Cycles.categories.family_heirlooms = _cycles[6];
+                    Cycles.categories.coin = _cycles[7];
+                    Cycles.categories.random = _cycles[8];
                 }
 
             } else {
@@ -52,20 +65,20 @@ var Cycles = {
     },
 
     setCycles: function () {
-        $.each(Cycles.data.cycles[Cycles.data.current], function (key, value) {
-            $(`input[name=${key}]`).val(value);
-        });
+        for (var category in Cycles.categories) {
+            $(`input[name=${category}]`).val(Cycles.categories[category]);
+        };
+
+        MapBase.addMarkers(true);
     },
     setLocaleDate: function () {
-        var _date = Cycles.data.updated_at.split(' ');
+        var _date = Cycles.categories.date.split(' ');
 
         $('.cycle-data').text(
             Language.get('menu.date')
                 .replace('{month}', Language.get(`menu.month.${_date[0]}`))
                 .replace('{day}', _date[1])
         );
-
-        return _date[1];
     },
     checkForUpdate: function () {
         var day = new Date().getUTCDate();
@@ -76,10 +89,35 @@ var Cycles = {
             $('.map-cycle-alert').addClass('hidden');
     },
     isSameAsYesterday: function (category) {
-        var todayCycle = Cycles.data.cycles[Cycles.data.current][category];
-        var yesterdayCycle = Cycles.data.cycles[Cycles.data.current - 1][category];
+        if (!Cycles.categories.yesterday)
+            return;
+
+        var todayCycle = Cycles.categories[category];
+        var yesterdayCycle = Cycles.categories.yesterday[Cycles.cyclesNeedsAnotherName(category)];
 
         return todayCycle == yesterdayCycle;
+    },
+
+    cyclesNeedsAnotherName: function (category) {
+        switch (category) {
+            case "card_cups":
+            case "card_pentacles":
+            case "card_swords":
+            case "card_wands":
+                return "tarot_cards";
+                break;
+
+            case "lost_bracelet":
+            case "lost_earrings":
+            case "lost_necklaces":
+            case "lost_ring":
+                return "lost_jewelry";
+                break;
+
+            default:
+                return category;
+                break;
+        }
     },
 
     getInGameCycle: function (category) {
@@ -172,7 +210,7 @@ var Cycles = {
     },
     exportTable: function (inGameCycles = false, toPrint = false) {
         var _tempTable = new Object();
-        $.each(Cycles.data.cycles, function (key, value) {
+        $.each(Cycles.categories.cycles, function (key, value) {
             _tempTable[key] = new Object();
             $.each(value, function (_k, _c) {
                 if (_k == "card_pentacles" || _k == "card_swords" || _k == "card_wands" ||
@@ -206,6 +244,6 @@ var Cycles = {
 }
 
 // show alert when cycles are not up to date
-setInterval(function () {
-    Cycles.checkForUpdate();
-}, 1000 * 60);
+//setInterval(function () {
+//    Cycles.checkForUpdate();
+//}, 1000 * 60);
